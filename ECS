@@ -1,0 +1,135 @@
+#include <LiquidCrystal.h>
+const int rs = 2, en = 3, d4 = 4, d5 = 5, d6 = 6, d7 = 7;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+#include <SoftwareSerial.h>
+SoftwareSerial mySerial(9,10);
+#include <TinyGPS.h> 
+#define m1 A0
+#define m2 A1
+#define m3 A2
+#define m4 A3
+#define bz A5
+#define rf 8
+int acc=12;
+TinyGPS gps;
+float flat=0, flon=0;
+int gval=0;
+int vhs=0;
+int rval=0,sval=0;
+void read_gps()
+{
+    bool newData = false;
+  unsigned long chars;
+  unsigned short sentences, failed;
+  for (unsigned long start = millis(); millis() - start < 1000😉
+  {
+    while (Serial.available())
+    {
+      char c = Serial.read();
+      if (gps.encode(c)) 
+        newData = true;
+    }
+  }
+
+  if (newData)
+  {
+    
+    unsigned long age;
+    gps.f_get_position(&flat, &flon, &age);
+  }
+}
+void setup()
+{
+  Serial.begin(9600);
+  mySerial.begin(115200);
+  lcd.begin(16, 2);  
+  lcd.print(" WELCOME");
+  lcd.setCursor(0,1);
+  lcd.print("INITIALIZING...");
+  delay(1000);
+  lcd.clear();
+  pinMode(bz,OUTPUT);
+  pinMode(m1,OUTPUT);
+  pinMode(m2,OUTPUT);
+  pinMode(m3,OUTPUT);
+  pinMode(m4,OUTPUT);
+  pinMode(acc,INPUT);
+  pinMode(rf,INPUT_PULLUP);
+  //digitalWrite(bz,0);
+  wifi_init();
+}
+
+void loop()
+{  
+  delay(200);
+  lcd.clear();
+   digitalWrite(m1,1);
+   digitalWrite(m2,0);
+   digitalWrite(m3,1);
+   digitalWrite(m4,0);
+int Aval=digitalRead(acc);
+ int rval=digitalRead(rf);
+//lcd.setCursor(0,0);
+//lcd.print("A:" + String(Alc));
+lcd.setCursor(2,0);
+lcd.print("T:" + String(rval));
+lcd.setCursor(9,0);
+lcd.print("A:" + String(Aval));
+//upload_iot(Aval,rval);
+if((rval==0)||(Aval==0))
+    {    
+       digitalWrite(bz,1);
+       digitalWrite(m1,0);
+       digitalWrite(m2,0);
+       digitalWrite(m3,0);
+       digitalWrite(m4,0);
+      upload_iot(Aval,rval);
+         
+    }
+  else
+    { 
+      digitalWrite(bz,0);
+    }
+   }
+void wifi_init()
+ {
+  mySerial.println("AT+RST");
+  delay(2000);
+  mySerial.println("AT+CWMODE=1");
+  delay(1000);
+  mySerial.print("AT+CWJAP=");
+  mySerial.write('"');
+  mySerial.print("SRC 24G"); // ssid/user name
+  mySerial.write('"');
+  mySerial.write(',');
+  mySerial.write('"');
+  mySerial.print("src@internet"); //password
+  mySerial.write('"');
+  mySerial.println();
+  delay(1000);
+ }
+void upload_iot(int x,int y) //ldr copied int to - x and gas copied into -y
+{ 
+  String cmd = "AT+CIPSTART=\"TCP\",\"";
+  cmd += "184.106.153.149"; // api.thingspeak.com
+  cmd += "\",80";
+  mySerial.println(cmd);
+  delay(1500);
+ String getStr ="GET /update?api_key=OMXFUPUBIVS9PYKJ&field1=";
+  getStr += String(x);
+  getStr +="&field2=";
+  getStr += String(y);
+  //getStr +="&field3=";
+ // getStr += String(z);
+  getStr +="&field3=";
+  getStr += String(12.9692);
+  getStr +="&field4=";
+  getStr += String(79.1559);
+  getStr += "\r\n\r\n";
+  cmd = "AT+CIPSEND=";
+  cmd += String(getStr.length());
+  mySerial.println(cmd);
+  delay(1500);
+  mySerial.println(getStr); 
+  delay(1500);
+}
